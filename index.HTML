@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ระบบเก็บข้อมูลพนักงาน</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kanit&display=swap');
+    body {
+      font-family: 'Kanit', sans-serif;
+      margin: 20px;
+      background: #f0f8ff;
+      color: #333;
+    }
+    input, select, button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #007BFF;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    button {
+      background-color: #007BFF;
+      color: white;
+      font-weight: bold;
+      transition: background-color 0.2s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 12px rgba(0, 123, 255, 0.2);
+    }
+    th, td {
+      border: 1px solid #dceeff;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #007BFF;
+      color: white;
+      font-size: 15px;
+    }
+    #deptSummary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .summaryBox {
+      background: #e9f3ff;
+      border: 1px solid #007BFF;
+      border-radius: 8px;
+      padding: 15px;
+      width: 300px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+      white-space: pre-line;
+    }
+    #langSwitcher {
+      float: right;
+      margin-top: -40px;
+      font-weight: bold;
+    }
+    h2#title {
+      margin-bottom: 10px;
+      color: #007BFF;
+    }
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr { display: block; }
+      td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+      }
+      td::before {
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+        white-space: nowrap;
+      }
+      td:nth-child(1)::before { content: "ชื่อ"; }
+      td:nth-child(2)::before { content: "แผนก"; }
+      td:nth-child(3)::before { content: "Size เสื้อ"; }
+      td:nth-child(4)::before { content: "รองเท้า"; }
+      td:nth-child(5)::before { content: "บ้านที่พัก"; }
+      td:nth-child(6)::before { content: "เข้าอินเดีย"; }
+      td:nth-child(7)::before { content: "บินออก"; }
+      td:nth-child(8)::before { content: "ประเภทวีซ่า"; }
+    }
+    @media (max-width: 768px) {
+      input, select, button {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+     }
+    }
+    #suggestionBox div {
+       padding: 8px;
+       cursor: pointer;
+    }
+    #suggestionBox div:hover {
+       background-color: #e0f0ff;
+    }
+
+  </style>
+</head>
+<body>
+
+<h2 id="title">Employee Thailand</h2>
+<select id="langSwitcher" onchange="switchLanguage(this.value)">
+  <option value="th">🇹🇭 ไทย</option>
+  <option value="en">🇬🇧 English</option>
+  <option value="cn">🇨🇳 中文</option>
+</select>
+
+<div>
+  <input type="text" id="name" placeholder="👤 ชื่อ-นามสกุล">
+  <select id="department">
+    <option value="">🏢 แผนก</option>
+    <option>Texture</option>
+    <option>Diffusion</option>
+    <option>PECVD</option>
+    <option>Print Screen</option>
+    <option>Process</option>
+    <option>Production</option>
+  </select>
+  <select id="shirtSize">
+    <option value="">👕 Size เสื้อ</option>
+    <option>S</option><option>M</option><option>L</option>
+    <option>XL</option><option>2XL</option><option>3XL</option>
+    <option>4XL</option><option>5XL</option>
+  </select>
+  <input type="number" id="shoeSize" placeholder="👟 เบอร์รองเท้า">
+  <input type="text" id="residence" placeholder="🏠 บ้านที่พัก">
+  <label for="arrivalDate">📅 วันที่เข้าอินเดีย:</label>
+  <input type="date" id="arrivalDate">
+  <select id="visaType">
+    <option value="">🛂 ประเภทวีซ่า</option>
+    <option value="business">Business Visa</option>
+    <option value="E2">E-2 Visa</option>
+  </select>
+  <button onclick="addData()">💾 บันทึก</button>
+  <button onclick="exportToExcel()">📤 Export Excel</button>
+  <button onclick="exportToJSON()">📦 Export JSON</button>
+  <button onclick="triggerImport()">📥 Import JSON</button>
+  <input type="file" id="importJSON" onchange="importFromJSON(event)" style="display: none;">
+  <input type="text" id="searchInput" placeholder="🔍 ค้นหาชื่อ/แผนก..." onkeyup="searchTable()">
+  <button onclick="summarizeByDepartment()">📊 สรุปตามแผนก</button>
+  <button onclick="hideSummary()">❌ ปิดสรุป</button>
+  <button onclick="clearAll()">🧹 ล้างข้อมูลทั้งหมด</button>
+  <div id="deptSummary"></div>
+  
+</div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>ชื่อ-นามสกุล</th><th>แผนก</th><th>Size เสื้อ</th><th>เบอร์รองเท้า</th>
+      <th>บ้านที่พัก</th><th>วันที่เข้าอินเดีย</th><th>วันหมดอายุ/บินออก</th><th>ประเภทวีซ่า</th><th>การจัดการ</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- 🔔 POPUP แจ้งเตือน -->
+<div id="popupOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.2); z-index:9998;" onclick="closePopup()"></div>
+<div id="popup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+  background:#fff; padding:20px 30px; border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.3); z-index:9999; text-align:center; font-size:18px; font-weight:bold;">
+  <img id="popupImage" src="" alt="รูปพนักงาน" style="max-width:150px; margin-bottom:10px; display:none;"><br>
+  <span id="popupText"></span><br><br>
+  <button onclick="closePopup()">ปิด</button>
+</div>
+
+<script>
+const tableBody = document.querySelector("#dataTable tbody");
+
+function switchLanguage(lang) {
+  const texts = {
+    th: ["ชื่อ-นามสกุล", "แผนก", "Size เสื้อ", "เบอร์รองเท้า", "บ้านที่พัก", "วันที่เข้าอินเดีย", "วันหมดอายุ/บินออก", "ประเภทวีซ่า", "การจัดการ"],
+    en: ["Name", "Department", "Shirt Size", "Shoe Size", "Residence", "Arrival Date", "Departure Date", "Visa Type", "Actions"],
+    cn: ["姓名", "部门", "衣服尺寸", "鞋码", "住宿", "入境日期", "出境日期", "签证类型", "操作"]
+  };
+  const ths = document.querySelectorAll("#dataTable thead th");
+  ths.forEach((th, i) => th.innerText = texts[lang][i]);
+  document.getElementById("title").innerText = {
+    th: "ระบบเก็บข้อมูลพนักงาน",
+    en: "Employee Management System",
+    cn: "员工管理系统"
+  }[lang];
+}
+
+function addData() {
+  const name = document.getElementById("name").value.trim();
+  const dept = document.getElementById("department").value;
+  const shirt = document.getElementById("shirtSize").value;
+  const shoe = document.getElementById("shoeSize").value;
+  const house = document.getElementById("residence").value;
+  const arrival = document.getElementById("arrivalDate").value;
+  const visa = document.getElementById("visaType").value;
+
+  if (!name || !dept || !shirt || !shoe || !house || !arrival || !visa) {
+    alert("กรุณากรอกข้อมูลให้ครบ");
+    return;
+  }
+
+  // ✅ ตรวจสอบชื่อซ้ำจาก localStorage
+  const data = JSON.parse(localStorage.getItem("employeeData") || "[]");
+  const existingNames = data.map(row => row[0]);
+  if (existingNames.includes(name)) {
+    alert("ชื่อพนักงานนี้มีอยู่แล้วในระบบ");
+    return;
+  }
+
+  // ✅ ตรวจสอบวันที่ไม่เกินวันนี้
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const arrivalDate = new Date(arrival);
+  arrivalDate.setHours(0, 0, 0, 0);
+  if (arrivalDate > today) {
+    alert("วันที่เข้าอินเดียต้องไม่เกินวันที่ปัจจุบัน");
+    return;
+  }
+
+  // คำนวณวันหมดอายุ
+  let departureStr = "";
+  if (visa === "business") {
+    const departureDate = new Date(arrivalDate);
+    departureDate.setDate(departureDate.getDate() + 90);
+    departureStr = departureDate.toISOString().split("T")[0];
+  } else if (visa === "E2") {
+    const expiryDate = new Date(arrivalDate);
+    expiryDate.setMonth(expiryDate.getMonth() + 6);
+    departureStr = expiryDate.toISOString().split("T")[0];
+  }
+
+  const existing = data.find(row => row[0] === name && row[1] === dept);
+  if (existing) {
+  alert("มีพนักงานชื่อเดียวกันในแผนกนี้แล้ว");
+  return;
+  }
+
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  if (arrivalDate < sixMonthsAgo) {
+  alert("วันที่เข้าอินเดียไม่ควรเกิน 6 เดือนย้อนหลัง");
+  return;
+  }
+
+
+  const row = tableBody.insertRow();
+  row.insertCell(0).innerText = name;
+  row.insertCell(1).innerText = dept;
+  row.insertCell(2).innerText = shirt;
+  row.insertCell(3).innerText = shoe;
+  row.insertCell(4).innerText = house;
+  row.insertCell(5).innerText = arrival;
+  row.insertCell(6).innerText = departureStr;
+  row.insertCell(7).innerText = visa;
+
+  const manageCell = row.insertCell(8);
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "ลบ";
+  delBtn.onclick = (event) => {
+    event.stopPropagation();
+    if (confirm("❗ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?")) {
+      row.onclick = null;
+      row.remove();
+      saveToLocal();
+    }
+  };
+  manageCell.appendChild(delBtn);
+  manageCell.appendChild(createEditButton(row));
+
+  row.onclick = () => showWarning(name, arrival, visa);
+  saveToLocal();
+  document.querySelectorAll("input, select").forEach(el => el.value = "");
+}
+
+function createEditButton(row) {
+  const btn = document.createElement("button");
+  btn.textContent = "✏️ แก้ไข";
+  btn.onclick = () => {
+    const cells = row.cells;
+    document.getElementById("name").value = cells[0].innerText;
+    document.getElementById("department").value = cells[1].innerText;
+    document.getElementById("shirtSize").value = cells[2].innerText;
+    document.getElementById("shoeSize").value = cells[3].innerText;
+    document.getElementById("residence").value = cells[4].innerText;
+    document.getElementById("arrivalDate").value = cells[5].innerText;
+    document.getElementById("visaType").value = cells[7].innerText;
+
+    // เคลียร์ popup แจ้งเตือน
+    closePopup();
+    row.onclick = null;
+
+    row.remove();
+    saveToLocal();
+  };
+  return btn;
+}
+
+function showWarning(name, arrival, visaType, imageUrl = "") {
+  const arrivalDate = new Date(arrival);
+  let message = "";
+
+  if (!visaType) {
+    message = `⚠️ ${name}: ยังไม่ได้เลือกประเภทวีซ่า`;
+  } else if (visaType === "business") {
+    const warnStart = new Date(arrivalDate);
+    const warnEnd = new Date(arrivalDate);
+    warnStart.setDate(warnStart.getDate() + 80);
+    warnEnd.setDate(warnEnd.getDate() + 90);
+    message = `🔔 ${name}:\nเตรียมตัวบินออกระหว่าง\n${warnStart.toLocaleDateString()} ถึง ${warnEnd.toLocaleDateString()}`;
+  } else if (visaType === "E2") {
+    const expire = new Date(arrivalDate);
+    expire.setMonth(expire.getMonth() + 6);
+    const warn = new Date(expire);
+    warn.setDate(warn.getDate() - 10);
+    message = `🔔 ${name}:\nวีซ่า E-2 จะหมดอายุ ${expire.toLocaleDateString()}\n(แจ้งเตือนตั้งแต่ ${warn.toLocaleDateString()})`;
+  }
+
+  document.getElementById("popupText").innerText = message;
+  const popupImage = document.getElementById("popupImage");
+  popupImage.style.display = "none";
+  document.getElementById("popup").style.display = "block";
+  document.getElementById("popupOverlay").style.display = "block";
+}
+
+function closePopup() {
+  document.getElementById("popup").style.display = "none";
+  document.getElementById("popupOverlay").style.display = "none";
+}
+
+function saveToLocal() {
+  const data = Array.from(tableBody.rows).map(row =>
+    Array.from(row.cells).slice(0, 8).map(cell => cell.innerText)
+  );
+  localStorage.setItem("employeeData", JSON.stringify(data));
+}
+
+function loadFromLocal() {
+  const data = JSON.parse(localStorage.getItem("employeeData") || "[]");
+  data.forEach(rowData => {
+    const row = tableBody.insertRow();
+    rowData.forEach(text => row.insertCell().innerText = text);
+    const manageCell = row.insertCell();
+
+    // ✅ ประกาศ delBtn อย่างถูกต้อง
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "ลบ";
+    delBtn.onclick = (event) => {
+  event.stopPropagation();
+  if (confirm("❗ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?")) {
+    row.onclick = null;
+    row.remove();
+    saveToLocal();
+  }
+};
+
+
+    manageCell.appendChild(delBtn);
+    manageCell.appendChild(createEditButton(row));
+    row.onclick = () => showWarning(rowData[0], rowData[5], rowData[7]);
+  });
+}
+window.onload = loadFromLocal;
+
+function exportToExcel() {
+  const wb = XLSX.utils.book_new();
+  const ws_name = "Employees";
+
+  const headers = ["ชื่อ", "แผนก", "Size เสื้อ", "รองเท้า", "ที่พัก", "เข้าอินเดีย", "วันหมดอายุ/บินออก", "วีซ่า"];
+  const data = [headers];
+  Array.from(tableBody.rows).forEach(row => {
+    data.push(Array.from(row.cells).slice(0, 8).map(cell => cell.innerText));
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+
+  ws['!cols'] = [
+    { wch: 25 }, // ชื่อ
+    { wch: 15 }, // แผนก
+    { wch: 10 }, // Size เสื้อ
+    { wch: 10 }, // รองเท้า
+    { wch: 15 }, // ที่พัก
+    { wch: 15 }, // เข้าอินเดีย
+    { wch: 18 }, // วันหมดอายุ
+    { wch: 12 }  // วีซ่า
+  ];
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+    if (!ws[cellAddress]) continue;
+    ws[cellAddress].s = {
+      font: { bold: true, color: { rgb: "FFFFFF" } },
+      alignment: { horizontal: "center", vertical: "center" },
+      fill: { fgColor: { rgb: "007BFF" } }
+    };
+  }
+
+  for (let R = 1; R <= range.e.r; ++R) {
+    for (let C = 0; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, ws_name);
+  XLSX.writeFile(wb, "employee_data.xlsx");
+}
+
+function exportToJSON() {
+  const data = localStorage.getItem("employeeData");
+  const blob = new Blob([data], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "employeeData.json";
+  a.click();
+}
+
+function importFromJSON(event) {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const json = e.target.result;
+    localStorage.setItem("employeeData", json);
+    location.reload();
+  };
+  reader.readAsText(file);
+}
+
+function triggerImport() {
+  document.getElementById("importJSON").click();
+}
+
+function searchTable() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const rows = tableBody.getElementsByTagName("tr");
+  Array.from(rows).forEach(row => {
+    const text = Array.from(row.cells).slice(0, 8)
+      .map(cell => cell.innerText.toLowerCase()).join(" ");
+    row.style.display = text.includes(input) ? "" : "none";
+  });
+}
+
+function summarizeByDepartment() {
+  const summary = {};
+  const today = new Date();
+  Array.from(tableBody.rows).forEach(row => {
+    const dept = row.cells[1].innerText;
+    const visa = row.cells[7].innerText;
+    const house = row.cells[4].innerText;
+    const shirt = row.cells[2].innerText;
+    const departure = new Date(row.cells[6].innerText);
+    if (!summary[dept]) {
+      summary[dept] = {
+        count: 0,
+        visas: {}, houses: new Set(),
+        shirts: {}, visaExpiringSoon: 0
+      };
+    }
+    summary[dept].count++;
+    summary[dept].visas[visa] = (summary[dept].visas[visa] || 0) + 1;
+    summary[dept].houses.add(house);
+    summary[dept].shirts[shirt] = (summary[dept].shirts[shirt] || 0) + 1;
+    const diffDays = (departure - today) / (1000 * 60 * 60 * 24);
+    if (diffDays <= 10 && diffDays >= 0) {
+      summary[dept].visaExpiringSoon++;
+    }
+  });
+
+  const container = document.getElementById("deptSummary");
+  container.innerHTML = "";
+  for (let dept in summary) {
+    const box = document.createElement("div");
+    box.className = "summaryBox";
+    box.innerText = `📁 แผนก: ${dept}\n👥 จำนวน: ${summary[dept].count}\n🏠 บ้านพัก: ${Array.from(summary[dept].houses).join(", ")}\n🧥 เสื้อ: ${Object.entries(summary[dept].shirts).map(([s, c]) => `${s}(${c})`).join(", ")}\n🛂 วีซ่า: ${Object.entries(summary[dept].visas).map(([v, c]) => `${v}(${c})`).join(", ")}\n⚠️ ใกล้หมดวีซ่า: ${summary[dept].visaExpiringSoon}`;
+    container.appendChild(box);
+  }
+}
+
+function hideSummary() {
+  document.getElementById("deptSummary").innerHTML = "";
+}
+
+window.onload = () => {
+  loadFromLocal();
+  const lang = navigator.language.startsWith("en") ? "en" : navigator.language.startsWith("zh") ? "cn" : "th";
+  switchLanguage(lang);
+  document.getElementById("langSwitcher").value = lang;
+};
+
+function clearAll() {
+  if (confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?")) {
+    localStorage.removeItem("employeeData");
+    location.reload();
+  }
+}
+function showSuggestions(inputText) {
+  const suggestionBox = document.getElementById("suggestionBox");
+  suggestionBox.innerHTML = "";
+  if (!inputText.trim()) {
+    suggestionBox.style.display = "none";
+    return;
+  }
+
+  const lower = inputText.toLowerCase();
+  const suggestions = new Set();
+
+  Array.from(tableBody.rows).forEach(row => {
+    const name = row.cells[0].innerText;
+    const dept = row.cells[1].innerText;
+    if (name.toLowerCase().includes(lower)) suggestions.add(name);
+    if (dept.toLowerCase().includes(lower)) suggestions.add(dept);
+  });
+
+  if (suggestions.size === 0) {
+    suggestionBox.style.display = "none";
+    return;
+  }
+
+  suggestions.forEach(text => {
+    const div = document.createElement("div");
+    div.textContent = text;
+    div.onclick = () => {
+      document.getElementById("searchInput").value = text;
+      suggestionBox.style.display = "none";
+      searchTable();
+    };
+    suggestionBox.appendChild(div);
+  });
+
+  const inputRect = document.getElementById("searchInput").getBoundingClientRect();
+  suggestionBox.style.left = inputRect.left + "px";
+  suggestionBox.style.top = (inputRect.bottom + window.scrollY) + "px";
+  suggestionBox.style.width = inputRect.width + "px";
+  suggestionBox.style.display = "block";
+}
+
+// ซ่อน suggestion เมื่อคลิกข้างนอก
+  document.addEventListener("click", function(e) {
+  if (!e.target.closest("#searchInput") && !e.target.closest("#suggestionBox")) {
+    document.getElementById("suggestionBox").style.display = "none";
+  }
+});
+
+
+</script>
+
+</body>
+</html>
