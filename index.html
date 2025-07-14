@@ -555,7 +555,28 @@ function showSuggestions(inputText) {
     document.getElementById("suggestionBox").style.display = "none";
   }
 });
+// โหลดข้อมูล JSON จากไฟล์ employeeData.json ถ้ายังไม่มีใน localStorage
+async function loadFromExternalJSON() {
+  const local = localStorage.getItem("employeeData");
+  if (!local || local === "[]") {
+    try {
+      const response = await fetch("employeeData.json");
+      const data = await response.json();
+      localStorage.setItem("employeeData", JSON.stringify(data));
+      location.reload(); // โหลดใหม่เพื่อให้ข้อมูลแสดงในตาราง
+    } catch (error) {
+      console.error("❌ โหลด employeeData.json ไม่สำเร็จ:", error);
+    }
+  }
+}
 
+window.onload = async () => {
+  await loadFromExternalJSON();
+  loadFromLocal(); // เรียกโหลดข้อมูลจาก localStorage
+  const lang = navigator.language.startsWith("en") ? "en" : navigator.language.startsWith("zh") ? "cn" : "th";
+  switchLanguage(lang);
+  document.getElementById("langSwitcher").value = lang;
+};
 
 </script>
 
