@@ -154,19 +154,17 @@
     <option value="business">Business Visa</option>
     <option value="E2">E-2 Visa</option>
   </select>
-  <button onclick="addData()">💾 บันทึก</button>
-  <button onclick="exportToExcel()">📤 Export Excel</button>
-  <button onclick="exportToJSON()">📦 Export JSON</button>
-  <button onclick="triggerImport()">📥 Import JSON</button>
-  <input type="file" id="importJSON" onchange="importFromJSON(event)" style="display: none;">
-  
+  <button id="btnSave" onclick="addData()">💾 บันทึก</button>
+  <button id="btnExportExcel" onclick="exportToExcel()">📤 Export Excel</button>
+  <button id="btnExportJSON" onclick="exportToJSON()">📦 Export JSON</button>
+  <button id="btnImportJSON" onclick="triggerImport()">📥 Import JSON</button>
   <input type="text" id="searchInput" placeholder="🔍 ค้นหาชื่อ/แผนก..." onkeyup="searchTable(); showSuggestions(this.value)">
+  <button id="btnSummarize" onclick="summarizeByDepartment()">📊 สรุปตามแผนก</button>
+  <button id="btnHideSummary" onclick="hideSummary()">❌ ปิดสรุป</button>
+  <button id="btnClearAll" onclick="clearAll()">🧹 ล้างข้อมูลทั้งหมด</button>
+  <input type="file" id="importJSON" onchange="importFromJSON(event)" style="display: none;">
   <div id="suggestionBox"></div>
   
-  <button onclick="summarizeByDepartment()">📊 สรุปตามแผนก</button>
-  <button onclick="hideSummary()">❌ ปิดสรุป</button>
-  <button onclick="clearAll()">🧹 ล้างข้อมูลทั้งหมด</button>
-  <div id="deptSummary"></div>
 </div>
 
 <table id="dataTable">
@@ -191,20 +189,111 @@
 <!-- 🔧 SCRIPT -->
 <script>
 const tableBody = document.querySelector("#dataTable tbody");
+const translations = {
+  th: {
+    title: "ระบบเก็บข้อมูลพนักงาน",
+    namePlaceholder: "👤 ชื่อ-นามสกุล",
+    deptPlaceholder: "🏢 แผนก",
+    shirtPlaceholder: "👕 Size เสื้อ",
+    shoePlaceholder: "👟 เบอร์รองเท้า",
+    residencePlaceholder: "🏠 บ้านที่พัก",
+    arrivalLabel: "📅 วันที่เข้าอินเดีย:",
+    visaPlaceholder: "🛂 ประเภทวีซ่า",
+    visaOptions: { business: "Business Visa", E2: "E-2 Visa" },
+    save: "💾 บันทึก",
+    exportExcel: "📤 Export Excel",
+    exportJSON: "📦 Export JSON",
+    importJSON: "📥 Import JSON",
+    search: "🔍 ค้นหาชื่อ/แผนก...",
+    summarize: "📊 สรุปตามแผนก",
+    closeSummary: "❌ ปิดสรุป",
+    clearAll: "🧹 ล้างข้อมูลทั้งหมด",
+    deleteConfirm: "❗ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?",
+    clearConfirm: "คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?",
+    popupClose: "ปิด"
+  },
+  en: {
+    title: "Employee Management System",
+    namePlaceholder: "👤 Full Name",
+    deptPlaceholder: "🏢 Department",
+    shirtPlaceholder: "👕 Shirt Size",
+    shoePlaceholder: "👟 Shoe Size",
+    residencePlaceholder: "🏠 Residence",
+    arrivalLabel: "📅 Arrival Date in India:",
+    visaPlaceholder: "🛂 Visa Type",
+    visaOptions: { business: "Business Visa", E2: "E-2 Visa" },
+    save: "💾 Save",
+    exportExcel: "📤 Export Excel",
+    exportJSON: "📦 Export JSON",
+    importJSON: "📥 Import JSON",
+    search: "🔍 Search Name/Department...",
+    summarize: "📊 Summarize by Department",
+    closeSummary: "❌ Close Summary",
+    clearAll: "🧹 Clear All Data",
+    deleteConfirm: "❗ Are you sure you want to delete this entry?",
+    clearConfirm: "Are you sure you want to clear all data?",
+    popupClose: "Close"
+  },
+  cn: {
+    title: "员工管理系统",
+    namePlaceholder: "👤 姓名",
+    deptPlaceholder: "🏢 部门",
+    shirtPlaceholder: "👕 衣服尺寸",
+    shoePlaceholder: "👟 鞋码",
+    residencePlaceholder: "🏠 住宿",
+    arrivalLabel: "📅 入境印度日期:",
+    visaPlaceholder: "🛂 签证类型",
+    visaOptions: { business: "商务签证", E2: "E-2 签证" },
+    save: "💾 保存",
+    exportExcel: "📤 导出 Excel",
+    exportJSON: "📦 导出 JSON",
+    importJSON: "📥 导入 JSON",
+    search: "🔍 搜索姓名/部门...",
+    summarize: "📊 按部门汇总",
+    closeSummary: "❌ 关闭汇总",
+    clearAll: "🧹 清除所有数据",
+    deleteConfirm: "❗ 确定要删除此条记录？",
+    clearConfirm: "确定要清除所有数据？",
+    popupClose: "关闭"
+  }
+};
 
 function switchLanguage(lang) {
-  const texts = {
+  const text = translations[lang];
+
+  document.getElementById("title").innerText = text.title;
+  document.getElementById("name").placeholder = text.namePlaceholder;
+  document.getElementById("department").options[0].text = text.deptPlaceholder;
+  document.getElementById("shirtSize").options[0].text = text.shirtPlaceholder;
+  document.getElementById("shoeSize").placeholder = text.shoePlaceholder;
+  document.getElementById("residence").placeholder = text.residencePlaceholder;
+  document.querySelector("label[for='arrivalDate']").innerText = text.arrivalLabel;
+  document.getElementById("visaType").options[0].text = text.visaPlaceholder;
+  document.getElementById("visaType").options[1].text = text.visaOptions.business;
+  document.getElementById("visaType").options[2].text = text.visaOptions.E2;
+  document.getElementById("searchInput").placeholder = text.search;
+
+  // ปุ่มต่าง ๆ
+  document.getElementById("btnSave").innerText = text.save;
+  document.getElementById("btnExportExcel").innerText = text.exportExcel;
+  document.getElementById("btnExportJSON").innerText = text.exportJSON;
+  document.getElementById("btnImportJSON").innerText = text.importJSON;
+  document.getElementById("btnSummarize").innerText = text.summarize;
+  document.getElementById("btnHideSummary").innerText = text.closeSummary;
+  document.getElementById("btnClearAll").innerText = text.clearAll;
+
+  // ปุ่มใน popup
+  document.querySelector("#popup button").innerText = text.popupClose;
+
+  // เปลี่ยนหัวตาราง
+  const headerTexts = {
     th: ["ชื่อ-นามสกุล", "แผนก", "Size เสื้อ", "เบอร์รองเท้า", "บ้านที่พัก", "วันที่เข้าอินเดีย", "วันหมดอายุ/บินออก", "ประเภทวีซ่า", "การจัดการ"],
     en: ["Name", "Department", "Shirt Size", "Shoe Size", "Residence", "Arrival Date", "Departure Date", "Visa Type", "Actions"],
     cn: ["姓名", "部门", "衣服尺寸", "鞋码", "住宿", "入境日期", "出境日期", "签证类型", "操作"]
   };
-  const ths = document.querySelectorAll("#dataTable thead th");
-  ths.forEach((th, i) => th.innerText = texts[lang][i]);
-  document.getElementById("title").innerText = {
-    th: "ระบบเก็บข้อมูลพนักงาน",
-    en: "Employee Management System",
-    cn: "员工管理系统"
-  }[lang];
+  document.querySelectorAll("#dataTable thead th").forEach((th, i) => {
+    th.innerText = headerTexts[lang][i];
+  });
 }
 
 function addData() {
@@ -280,7 +369,8 @@ function addData() {
   delBtn.textContent = "ลบ";
   delBtn.onclick = (event) => {
     event.stopPropagation();
-    if (confirm("❗ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?")) {
+    if (confirm(translations[langSwitcher.value].deleteConfirm))
+ {
       row.onclick = null;
       row.remove();
       saveToLocal();
@@ -319,22 +409,40 @@ function createEditButton(row) {
 
 function showWarning(name, arrival, visaType, imageUrl = "") {
   const arrivalDate = new Date(arrival);
+  const lang = document.getElementById("langSwitcher").value;
   let message = "";
 
   if (!visaType) {
-    message = `⚠️ ${name}: ยังไม่ได้เลือกประเภทวีซ่า`;
+    const missingVisa = {
+      th: `⚠️ ${name}: ยังไม่ได้เลือกประเภทวีซ่า`,
+      en: `⚠️ ${name}: Visa type not selected`,
+      cn: `⚠️ ${name}: 尚未选择签证类型`
+    };
+    message = missingVisa[lang];
   } else if (visaType === "business") {
     const warnStart = new Date(arrivalDate);
     const warnEnd = new Date(arrivalDate);
     warnStart.setDate(warnStart.getDate() + 80);
     warnEnd.setDate(warnEnd.getDate() + 90);
-    message = `🔔 ${name}:\nเตรียมตัวบินออกระหว่าง\n${warnStart.toLocaleDateString()} ถึง ${warnEnd.toLocaleDateString()}`;
+
+    const msg = {
+      th: `🔔 ${name}:\nเตรียมตัวบินออกระหว่าง\n${warnStart.toLocaleDateString()} ถึง ${warnEnd.toLocaleDateString()}`,
+      en: `🔔 ${name}:\nPrepare to fly out between\n${warnStart.toLocaleDateString()} and ${warnEnd.toLocaleDateString()}`,
+      cn: `🔔 ${name}:\n请准备在以下时间段出境：\n${warnStart.toLocaleDateString()} 至 ${warnEnd.toLocaleDateString()}`
+    };
+    message = msg[lang];
   } else if (visaType === "E2") {
     const expire = new Date(arrivalDate);
     expire.setMonth(expire.getMonth() + 6);
     const warn = new Date(expire);
     warn.setDate(warn.getDate() - 10);
-    message = `🔔 ${name}:\nวีซ่า E-2 จะหมดอายุ ${expire.toLocaleDateString()}\n(แจ้งเตือนตั้งแต่ ${warn.toLocaleDateString()})`;
+
+    const msg = {
+      th: `🔔 ${name}:\nวีซ่า E-2 จะหมดอายุ ${expire.toLocaleDateString()}\n(แจ้งเตือนตั้งแต่ ${warn.toLocaleDateString()})`,
+      en: `🔔 ${name}:\nE-2 Visa will expire on ${expire.toLocaleDateString()}\n(Warning from ${warn.toLocaleDateString()})`,
+      cn: `🔔 ${name}:\nE-2 签证将于 ${expire.toLocaleDateString()} 到期\n（从 ${warn.toLocaleDateString()} 开始提醒）`
+    };
+    message = msg[lang];
   }
 
   document.getElementById("popupText").innerText = message;
@@ -343,6 +451,7 @@ function showWarning(name, arrival, visaType, imageUrl = "") {
   document.getElementById("popup").style.display = "block";
   document.getElementById("popupOverlay").style.display = "block";
 }
+
 
 function closePopup() {
   document.getElementById("popup").style.display = "none";
@@ -381,7 +490,6 @@ function loadFromLocal() {
     row.onclick = () => showWarning(rowData[0], rowData[5], rowData[7]);
   });
 }
-window.onload = loadFromLocal;
 
 function exportToExcel() {
   const wb = XLSX.utils.book_new();
@@ -514,7 +622,8 @@ window.onload = () => {
 };
 
 function clearAll() {
-  if (confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?")) {
+  if (confirm(translations[langSwitcher.value].clearConfirm))
+ {
     localStorage.removeItem("employeeData");
     location.reload();
   }
