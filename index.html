@@ -164,7 +164,8 @@
   <button id="btnClearAll" onclick="clearAll()">🧹 ล้างข้อมูลทั้งหมด</button>
   <input type="file" id="importJSON" onchange="importFromJSON(event)" style="display: none;">
   <div id="suggestionBox"></div>
-  
+  <div id="deptSummary"></div>
+
 </div>
 
 <table id="dataTable">
@@ -210,7 +211,9 @@ const translations = {
     clearAll: "🧹 ล้างข้อมูลทั้งหมด",
     deleteConfirm: "❗ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?",
     clearConfirm: "คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?",
-    popupClose: "ปิด"
+    popupClose: "ปิด",
+    delete: "ลบ",
+    edit: "แก้ไข"
   },
   en: {
     title: "Employee Management System",
@@ -232,7 +235,9 @@ const translations = {
     clearAll: "🧹 Clear All Data",
     deleteConfirm: "❗ Are you sure you want to delete this entry?",
     clearConfirm: "Are you sure you want to clear all data?",
-    popupClose: "Close"
+    popupClose: "Close",
+    delete: "Delete",
+    edit: "Edit"
   },
   cn: {
     title: "员工管理系统",
@@ -254,13 +259,16 @@ const translations = {
     clearAll: "🧹 清除所有数据",
     deleteConfirm: "❗ 确定要删除此条记录？",
     clearConfirm: "确定要清除所有数据？",
-    popupClose: "关闭"
+    popupClose: "关闭",
+    delete: "删除",
+    edit: "编辑"
   }
 };
 
+
 function switchLanguage(lang) {
   const text = translations[lang];
-
+  updateActionButtonsText();
   document.getElementById("title").innerText = text.title;
   document.getElementById("name").placeholder = text.namePlaceholder;
   document.getElementById("department").options[0].text = text.deptPlaceholder;
@@ -366,7 +374,7 @@ function addData() {
 
   const manageCell = row.insertCell(8);
   const delBtn = document.createElement("button");
-  delBtn.textContent = "ลบ";
+  delBtn.textContent = translations[langSwitcher.value].delete;
   delBtn.onclick = (event) => {
     event.stopPropagation();
     if (confirm(translations[langSwitcher.value].deleteConfirm))
@@ -386,7 +394,7 @@ function addData() {
 
 function createEditButton(row) {
   const btn = document.createElement("button");
-  btn.textContent = "✏️ แก้ไข";
+  btn.textContent = translations[langSwitcher.value].edit;
   btn.onclick = () => {
     const cells = row.cells;
     document.getElementById("name").value = cells[0].innerText;
@@ -474,7 +482,7 @@ function loadFromLocal() {
 
     // ✅ ประกาศ delBtn อย่างถูกต้อง
     const delBtn = document.createElement("button");
-    delBtn.textContent = "ลบ";
+    delBtn.textContent = translations[langSwitcher.value].delete;
     delBtn.onclick = (event) => {
   event.stopPropagation();
   if (confirm("❗ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?")) {
@@ -692,14 +700,26 @@ async function loadFromExternalJSON() {
 
 window.onload = async () => {
   await loadFromExternalJSON();
-  loadFromLocal(); // เรียกโหลดข้อมูลจาก localStorage
+  loadFromLocal();
   const lang = navigator.language.startsWith("en") ? "en" : navigator.language.startsWith("zh") ? "cn" : "th";
   switchLanguage(lang);
   document.getElementById("langSwitcher").value = lang;
 };
+function updateActionButtonsText() {
+  const lang = document.getElementById("langSwitcher").value;
+  const rows = tableBody.querySelectorAll("tr");
+  rows.forEach(row => {
+    const manageCell = row.cells[8];
+    if (manageCell && manageCell.children.length >= 2) {
+      manageCell.children[0].innerText = translations[lang].delete;
+      manageCell.children[1].innerText = translations[lang].edit;
+    }
+  });
+}
 
 
 </script>
 
 </body>
 </html>
+
