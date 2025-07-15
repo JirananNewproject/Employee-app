@@ -99,16 +99,24 @@
         width: 100%;
         box-sizing: border-box;
         margin-bottom: 10px;
-     }
+      }
+    }
+    #suggestionBox {
+      position: absolute;
+      border: 1px solid #ccc;
+      background: white;
+      z-index: 999;
+      display: none;
+      max-height: 150px;
+      overflow-y: auto;
     }
     #suggestionBox div {
-       padding: 8px;
-       cursor: pointer;
+      padding: 8px;
+      cursor: pointer;
     }
     #suggestionBox div:hover {
-       background-color: #e0f0ff;
+      background-color: #e0f0ff;
     }
-
   </style>
 </head>
 <body>
@@ -151,12 +159,14 @@
   <button onclick="exportToJSON()">📦 Export JSON</button>
   <button onclick="triggerImport()">📥 Import JSON</button>
   <input type="file" id="importJSON" onchange="importFromJSON(event)" style="display: none;">
-  <input type="text" id="searchInput" placeholder="🔍 ค้นหาชื่อ/แผนก..." onkeyup="searchTable()">
+  
+  <input type="text" id="searchInput" placeholder="🔍 ค้นหาชื่อ/แผนก..." onkeyup="searchTable(); showSuggestions(this.value)">
+  <div id="suggestionBox"></div>
+  
   <button onclick="summarizeByDepartment()">📊 สรุปตามแผนก</button>
   <button onclick="hideSummary()">❌ ปิดสรุป</button>
   <button onclick="clearAll()">🧹 ล้างข้อมูลทั้งหมด</button>
   <div id="deptSummary"></div>
-  
 </div>
 
 <table id="dataTable">
@@ -178,6 +188,7 @@
   <button onclick="closePopup()">ปิด</button>
 </div>
 
+<!-- 🔧 SCRIPT -->
 <script>
 const tableBody = document.querySelector("#dataTable tbody");
 
@@ -578,7 +589,9 @@ window.onload = async () => {
   document.getElementById("langSwitcher").value = lang;
 };
 
+
 </script>
 
 </body>
 </html>
+
